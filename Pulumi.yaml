@@ -1,0 +1,6 @@
+name: pulumi-gcp-weather
+runtime:
+  name: python
+  options:
+    virtualenv: venv
+description: weather data pipeline on gcp with visualization
