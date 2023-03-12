@@ -33,5 +33,7 @@ class DataSource:
         return self._data.shape[0]
     
     @property
-    def secondary_measures_axis(self) -> List[str]:
-        return [msr for msr in self.measures_list if msr in self._data[DataSchema.secondary_numeric_measures]]
+    def secondary_measures_list(self) -> List[str]:
+        return [msr for msr in self.measures_list if msr in (DataSchema.cloudcover, DataSchema.lifted_index,
+                                                              DataSchema.tranparency, DataSchema.rh2m,
+                                                              DataSchema.wind10m_speed)]

@@ -11,8 +11,7 @@ def render(*, app: Dash, data_source: DataSource) -> html.Div:
 
     @app.callback(
         Output(ids.LOCATION_DROPDOWN, 'value'),
-        Input(ids.MEASURE_DROPDOWN, 'value'),
-        Input(ids.SELECT_ALL_LOCATIONS_BUTTON, 'n_clicks')
+        Input(ids.MEASURE_DROPDOWN, 'value')
     )
     def select_all_locations(measures: List[str], _: int) -> List[str]:
         return data_source.filter(measures=measures).location_list
