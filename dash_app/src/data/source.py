@@ -9,31 +9,28 @@ from .loader import DataSchema
 
 @dataclass
 class DataSource:
-    _data = pd.DataFrame
+    data : pd.DataFrame
 
-    def filter(self, locations: Optional[List[str]], measures: Optional[List[str]]) -> DataSource:
-        if locations is None:
-            locations = self.locations_list
+    def filter(self, location: str, measures: Optional[List[str]]) -> DataSource:
         if measures is None:
             measures = self.measures_list
-        filtered_data = self._data.query('location in @locations')
-        filtered_data = filtered_data.loc[measures]
-        return DataSource(filtered_data)
+        filtereddata = self.data[self.data['location'] == location]
+        filtereddata = filtereddata[['location', 'timepoint', *measures]]
+        return DataSource(filtereddata)
 
     @property
     def locations_list(self) -> List[str]:
-        return sorted(set(self._data[DataSchema.location].to_list()))
+        return sorted(set(self.data['location'].to_list()))
     
     @property
     def measures_list(self) -> List[str]:
-        return [col for col in list(self._data.columns()) if col not in (DataSchema.location, DataSchema.timepoint)]
+        return [col for col in list(self.data.columns) if col not in ('location', 'timepoint')]
     
     @property
     def row_count(self) -> int:
-        return self._data.shape[0]
+        return self.data.shape[0]
     
     @property
     def secondary_measures_list(self) -> List[str]:
-        return [msr for msr in self.measures_list if msr in (DataSchema.cloudcover, DataSchema.lifted_index,
-                                                              DataSchema.tranparency, DataSchema.rh2m,
-                                                              DataSchema.wind10m_speed)]
+        return [msr for msr in self.measures_list if msr in ('cloudcover', 'lifted_index', 'transparency',
+                                                              'rh2m', 'wind10m_speed')]

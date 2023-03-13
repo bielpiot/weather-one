@@ -1,5 +1,5 @@
 import pandas as pd
-from pydantic import BaseModel, validator, conint, root_validator
+from pydantic import BaseModel, validator, conint
 from datetime import datetime
 from functools import wraps
 from typing import List
@@ -11,7 +11,7 @@ class DataSchema(BaseModel):
     timepoint: datetime
     cloudcover: conint(ge=fields.Cloudcover.LOW_BOUND, le=fields.Cloudcover.HIGH_BOUND) 
     seeing: conint(ge=fields.Seeing.LOW_BOUND, le=fields.Seeing.HIGH_BOUND) 
-    tranparency: conint(ge=fields.Transparency.LOW_BOUND, le=fields.Transparency.HIGH_BOUND) 
+    transparency: conint(ge=fields.Transparency.LOW_BOUND, le=fields.Transparency.HIGH_BOUND) 
     lifted_index: int # Atmospheric instability, lower = more unstable
     rh2m: conint(ge=fields.Rh2m.LOW_BOUND, le=fields.Rh2m.HIGH_BOUND) 
     temp2m: conint(ge=fields.Temp2m.LOW_BOUND, le=fields.Temp2m.HIGH_BOUND) 
@@ -26,7 +26,9 @@ class DataSchema(BaseModel):
             raise ValueError('incorrect lifted index!')
         return v
         
-
+    @classmethod
+    def get_fields_names(cls):
+        return list(cls.schema().get("properties").keys()) 
 
 def validate_data_schema(data_schema: BaseModel):
     """
@@ -37,13 +39,13 @@ def validate_data_schema(data_schema: BaseModel):
     def wrapper(func):
 
         class Validator(BaseModel):
-            df_dict: List[data_schema]
+            schema_dict: List[data_schema]
 
         def _wrapper(*args, **kwargs):
             result = func(*args, **kwargs)
             if isinstance(result, pd.DataFrame):
                 df_dict = result.to_dict(orient='records')
-                _ = Validator(df_dict=df_dict)
+                _ = Validator(schema_dict=df_dict)
             else:
                 raise TypeError('You are not providing pandas.DataFrame')
             return result
