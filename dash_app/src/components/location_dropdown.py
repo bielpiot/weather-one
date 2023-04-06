@@ -8,13 +8,10 @@ from ..data.source import DataSource
 from . import ids
 
 def render(*, app: Dash, data_source: DataSource) -> html.Div:
-
-    @app.callback(
-        Output(ids.LOCATION_DROPDOWN, 'value'),
-        Input(ids.MEASURE_DROPDOWN, 'value')
-    )
-    def select_all_locations(measures: List[str], _: int) -> List[str]:
-        return data_source.filter(measures=measures).location_list
+   
+    @app.callback()
+    def a():
+        pass
     
     return html.Div(
         children = [
@@ -25,16 +22,10 @@ def render(*, app: Dash, data_source: DataSource) -> html.Div:
                     {'label': location, "value": location}
                     for location in data_source.locations_list
                 ],
-                value=data_source.locations_list,
-                multi=True,
+                value=data_source.locations_list[0],
+                multi=False,
+                clearable=False,
                 placeholder="Select location"
-
             ),
-           html.Button(
-                className='dropdown-button',
-                children=["Select all"],
-                id=ids.SELECT_ALL_LOCATIONS_BUTTON,
-                n_clicks=0
-           ) 
         ]
     )

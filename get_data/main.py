@@ -2,16 +2,19 @@ import requests
 from datetime import datetime
 import pandas as pd
 from collections import namedtuple
+from typing import NamedTuple
 from typing import List
 import json
 import os
 
+class Location(NamedTuple):
+    name: str
+    latitude: float
+    longitude: float
 
 
-Location = namedtuple('Location', ['name', 'latitude', 'longitude'])
-
-warsaw = Location('Warsaw', latitude=21.0122287, longitude=52.2296756)
-stalowa_wola = Location('Stalowa Wola', latitude=22.053586, longitude=50.5826005)
+warsaw = Location(name='Warsaw', latitude=21.0122287, longitude=52.2296756)
+stalowa_wola = Location(name='Stalowa Wola', latitude=22.053586, longitude=50.5826005)
 
 LOCATIONS = [warsaw, stalowa_wola]
 

@@ -2,7 +2,8 @@ import pandas as pd
 from pydantic import BaseModel, validator, conint
 from datetime import datetime
 from functools import wraps
-from typing import List
+from typing import List, Dict, Any
+from . import mapping as mp
 
 import dash_app.src.data.fields as fields
 
@@ -70,9 +71,25 @@ def validate_unique_columns_combinations(columns: List[str]):
         
         return _wrapper
     return wraper
+
+def rescale_data(mapping: List[tuple]):
+    """
+    Decorator to rescale numeric data - integrity purposes. 
+    Input list of tuples including column name to be rescaled and dictionary
+    with mapping (initial value -> rescaled value)
+    """
+    def wrapper(func):
+        def _wrapper(*args, **kwargs):
+            result = func(*args, **kwargs)
+            for mapper in mapping:
+                result.replace({mapper[0]: mapper[1]}, inplace=True)
+            return result
+        return _wrapper
+    return wrapper
+
                 
-                
-@validate_unique_columns_combinations(['timepoint', 'location'])                
+@validate_unique_columns_combinations(['timepoint', 'location'])
+@rescale_data([('rh2m', mp.RH2M_SCALED_TABLE), ('lifted_index', mp.LIFTED_INDEX_SCALED_TABLE)])                
 @validate_data_schema(DataSchema)
 def load_astrometeo_data(path: str) -> pd.DataFrame:
     data = pd.read_csv(path)

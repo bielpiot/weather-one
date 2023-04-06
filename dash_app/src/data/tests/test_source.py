@@ -40,5 +40,8 @@ def test_DataSource_filter(valid_test_DataSource):
                                             measures=measures)
     assert filtered.row_count == 10
     assert filtered.data.shape[1] == 6
-    assert filtered.secondary_measures_list == ['transparency', 'lifted_index', 'wind10m_speed']
-    
+    assert sorted(filtered.secondary_measures_list) == sorted(['transparency', 'lifted_index', 'wind10m_speed'])
+
+def test_DataSource_prepare_data_table(valid_test_DataSource):
+    assert not valid_test_DataSource.data['timepoint'].is_monotonic_increasing
+    assert valid_test_DataSource.build_data_table(sort_by='timepoint')['timepoint'].is_monotonic_increasing 

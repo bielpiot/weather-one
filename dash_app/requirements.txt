@@ -4,5 +4,6 @@ dash-bootstrap-components
 pandas
 pandas-stubs
 plotly
+pydantic
 pytest
 Faker

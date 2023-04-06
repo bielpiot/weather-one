@@ -1,8 +1,10 @@
 import pytest
-from ..loader import DataSchema, validate_data_schema, validate_unique_columns_combinations
+from ..loader import DataSchema, validate_data_schema, validate_unique_columns_combinations, rescale_data
 from .weather_data_generator import FakeWeatherDataGenerator
 import pandas as pd
+import numpy as np
 from pydantic import ValidationError
+from .. import mapping as mp
 
 @pytest.fixture
 def valid_test_dataframe() -> pd.DataFrame:
@@ -40,6 +42,10 @@ def invalid_data_not_unique():
 def digest_df(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
+@rescale_data([('rh2m', mp.RH2M_SCALED_TABLE), ('lifted_index', mp.LIFTED_INDEX_SCALED_TABLE)])
+def rescale_df(df:pd.DataFrame) -> pd.DataFrame:
+    return df
+
 def test_load_successful(valid_test_dataframe):
     digest_df(valid_test_dataframe)
 
@@ -58,4 +64,9 @@ def test_load_fails_data_not_unique(invalid_data_not_unique):
 def test_load_fails_not_pandas_df():
     with pytest.raises(TypeError):
         digest_df('I am not a DataFrame')
+
+def test_df_rescale_successful(valid_test_dataframe):
+    df = rescale_df(valid_test_dataframe)
+    assert set(df['rh2m'].unique()).issubset(set((mp.RH2M_SCALED_TABLE.values())))
+    assert set(df['lifted_index'].unique()).issubset(set((mp.LIFTED_INDEX_SCALED_TABLE.values())))
 

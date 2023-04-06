@@ -6,68 +6,63 @@ import pandas as pd
 from . import ids
 from typing import List
 from ..data.source import DataSource
+from ..data import mapping as mp
 
-CLOUDCOVER_DESC_TABLE = {
-                             1: '0%-6%', 2: '6%-19%', 3: '19%-31%', 4: '31%-44%',
-                             5: '44%-56%', 6: '56%-69%', 7: '69%-81%', 8: '81%-94%',
-                             9: '94%-100%'
-                             }
-    
-LIFTED_INDEX_DESC_TABLE = {
-                            -10: 'Below -7', -6: '-7 to -5', -4: '-5 to -3',
-                            -1: '-3 to 0', 2: '0 to 4', 6: '4 to 8',
-                            10: '8 to 11', 15: 'Over 11'
-                            }
-
-TRANSPARENCY_DESC_TABLE = {
-                            1: '<0.3', 2: '0.3-0.4', 3: '0.4-0.5',
-                            4: '0.5-0.6', 5: '0.6-0.7', 6: '0.7-0.85',
-                            7: '0.85-1', 8: '>1'
-                            }
-
-RH2M_DESC_TABLE = {**{n: f'{((n+4)*5)}%-{(n+5)*5}%' for n in range(-4,16)},
-                    **{16: '100%'}}
-
-WIND_SPEEC_DESC_TABLE = {
-                    1: 'Below 0.3m/s (calm)', 2: '0.3-3.4m/s (light)',
-                    3: '3.4-8.0m/s (moderate)', 4: '8.0-10.8m/s (fresh)',
-                    5: '10.8-17.2m/s (strong)', 6: '17.2-24.5m/s (gale)',
-                    7: '24.5-32.6m/s (storm)', 8: 'Over 32.6m/s (hurricane)'
-                    }
-    
 
 def render(app: Dash, data_source: DataSource) -> html.Div:
     @app.callback(
-        Output(ids.LINE_CHART, 'children'),
+        Output(ids.LINE_CHART, 'figure'),
         Input(ids.LOCATION_DROPDOWN, 'value'),
         Input(ids.MEASURE_DROPDOWN, 'value'),
     )
-    def update_chart(locations: List[str], measures: List[str]) -> html.Div:
+    def update_chart(locations: List[str], measures: List[str]) -> go.Figure:
         filtered_data_source = data_source.filter(locations=locations, measures=measures)
         if not filtered_data_source.row_count:
             return html.Div("No data", id=ids.LINE_CHART)
+        data_table = filtered_data_source.build_data_table()
         
         fig = make_subplots(specs=[[{'secondary_y': True}]])
+        
 
+        if 'temp2m' in filtered_data_source.measures_list:
         #temperatures line
-        fig.add_trace(
-            go.Scatter(
-                
+            fig.add_trace(
+                go.Scatter(
+                    x = data_table['timepoint'],
+                    y = data_table['temp2m'],
+                    name = 'temperature'
+                ), secondary_y=False,
             )
-        )
+
         # relative humidity line
-        # prec indicatiors 
-        # wind bar charts
+        # prec indicatiors
+        for secondary_measure in filtered_data_source.secondary_measures_list:
+            fig.add_trace(
+                go.Scatter(
+                    x = data_table['timepoint'],
+                    y = data_table[secondary_measure]
+                ), secondary_y=True,
+            )
 
+        min_y = min(data_table['temp2m']) - 5
+        max_y = max(data_table['temp2m']) + 5
+        min_sec_y = 0
+        max_sec_y = 12
 
-        # main_fig = px.line(
-        #     data_frame=filtered_data_source,
-        #     title="Astro weather forecast"
-        #     x=DataSchema.timepoint,
-        # )
+        fig.update_yaxes(range=[min_sec_y, max_sec_y], secondary_y=True, title_text='temp')
+        fig.update_yaxes(range=[min_y, max_y], secondary_y=False)
+        fig.update_xaxes(title_text='timepoint')
 
-        # wind_fig = px.timeline()
+        return fig
 
-        return html.Div(dcc.Graph(figure=[], id=ids.LINE_CHART))
-    
-    return html.Div(id=ids.LINE_CHART)
+    return html.Div(dcc.Graph(figure=[],
+                                id=ids.LINE_CHART,
+                                className='six columns',
+                                config={
+                                    'staticPlot': False,
+                                    'scrollZoom': True,
+                                    'doubleClick': 'reset',
+                                    'showTips': True,
+                                    'displayModeBar': 'hover',
+                                    'watermark': True
+                                }))
