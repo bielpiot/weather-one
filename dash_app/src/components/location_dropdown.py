@@ -8,10 +8,6 @@ from ..data.source import DataSource
 from . import ids
 
 def render(*, app: Dash, data_source: DataSource) -> html.Div:
-   
-    @app.callback()
-    def a():
-        pass
     
     return html.Div(
         children = [

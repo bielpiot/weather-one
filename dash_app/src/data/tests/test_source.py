@@ -30,7 +30,7 @@ def test_DataSource_row_count(valid_test_DataSource):
 
 def test_DataSource_secondary_measures_list(valid_test_DataSource):
     meas_list = valid_test_DataSource.secondary_measures_list
-    assert sorted(meas_list) ==  sorted(['cloudcover', 'lifted_index', 'transparency',
+    assert sorted(meas_list) ==  sorted(['cloudcover', 'lifted_index', 'seeing', 'transparency',
                                     'rh2m', 'wind10m_speed'])   
 
 def test_DataSource_filter(valid_test_DataSource):
@@ -39,8 +39,12 @@ def test_DataSource_filter(valid_test_DataSource):
     filtered = valid_test_DataSource.filter(location=random_location, 
                                             measures=measures)
     assert filtered.row_count == 10
-    assert filtered.data.shape[1] == 6
+    assert filtered.data.shape[1] == 8
     assert sorted(filtered.secondary_measures_list) == sorted(['transparency', 'lifted_index', 'wind10m_speed'])
+    filtered = valid_test_DataSource.filter(location=random_location, 
+                                            measures=None)
+    assert filtered.row_count == 10
+    assert filtered.data.shape[1] == 11
 
 def test_DataSource_prepare_data_table(valid_test_DataSource):
     assert not valid_test_DataSource.data['timepoint'].is_monotonic_increasing

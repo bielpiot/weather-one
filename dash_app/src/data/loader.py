@@ -4,8 +4,7 @@ from datetime import datetime
 from functools import wraps
 from typing import List, Dict, Any
 from . import mapping as mp
-
-import dash_app.src.data.fields as fields
+from . import fields as fields
 
 class DataSchema(BaseModel):
     location: str
@@ -87,10 +86,27 @@ def rescale_data(mapping: List[tuple]):
         return _wrapper
     return wrapper
 
-                
+def add_descriptions(columns: List[str]):
+    """
+    Add dolumns with descriptions - utlized later for hovertemplate on chart    
+    """
+    def wrapper(func):
+        def _wrapper(*args, **kwargs):
+            result = func(*args, **kwargs)
+            for column in columns:
+                mapping = mp.descriptions.get(column)
+                desc_column_name = f'{column}_desc'
+                result[desc_column_name] = result[column].map(mapping)
+            return result
+        return _wrapper
+    return wrapper
+
+
+@add_descriptions(['cloudcover', 'lifted_index', 'seeing', 'transparency', 'rh2m', 'wind10m_speed'])                
 @validate_unique_columns_combinations(['timepoint', 'location'])
 @rescale_data([('rh2m', mp.RH2M_SCALED_TABLE), ('lifted_index', mp.LIFTED_INDEX_SCALED_TABLE)])                
 @validate_data_schema(DataSchema)
 def load_astrometeo_data(path: str) -> pd.DataFrame:
     data = pd.read_csv(path)
+    data['timepoint'] = pd.to_datetime(data['timepoint'])
     return data

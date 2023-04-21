@@ -33,6 +33,9 @@ RH2M_SCALED_TABLE = {
 
 RH2M_DESC_TABLE_FINAL = {RH2M_SCALED_TABLE.get(k, k) : v for k, v in RH2M_DESC_TABLE_START.items()}
 
+SEEING_DESC_TABLE = {1: '<0.5"', 2:'0.5"-0.75"', 3:'0.75"-1"', 4: '1"-1.25"',
+                     5:'1.25"-1.5"', 6: '1.5"-2"', 7: '2"-2.5"', 8: '>2.5"'}
+
 WIND_SPEEC_DESC_TABLE = {
                     1: 'Below 0.3m/s (calm)', 2: '0.3-3.4m/s (light)',
                     3: '3.4-8.0m/s (moderate)', 4: '8.0-10.8m/s (fresh)',
@@ -40,5 +43,25 @@ WIND_SPEEC_DESC_TABLE = {
                     7: '24.5-32.6m/s (storm)', 8: 'Over 32.6m/s (hurricane)'
                     }
 
-print(RH2M_DESC_TABLE_FINAL)
-print(LIFTED_INDEX_DESC_TABLE)
+descriptions = {
+    'cloudcover': CLOUDCOVER_DESC_TABLE,
+    'lifted_index': LIFTED_INDEX_DESC_TABLE,
+    'seeing': SEEING_DESC_TABLE,
+    'transparency': TRANSPARENCY_DESC_TABLE,
+    'rh2m': RH2M_DESC_TABLE_FINAL,
+    'wind10m_speed': WIND_SPEEC_DESC_TABLE
+}
+
+human_readable_measures = {
+    'location': 'Location',
+    'timepoint': 'Time',
+    'cloudcover': '% Cloud coverage',
+    'seeing': 'Astronomical seeing',
+    'transparency': 'Atmosphere transparency',
+    'lifted_index': 'Atmosphere stability',
+    'rh2m': 'Relative humidity',
+    'temp2m': 'Temperature',
+    'prec_type': 'Precipitation',
+    'wind10m_direction': 'Wind direction',
+    'wind10m_speed': 'Wind speed'
+}
