@@ -1,44 +1,54 @@
 import datetime
+from typing import Dict, Any
 from dash import Dash, html, dcc
 from dash.dependencies import Input, Output
 from ..data.source import DataSource
 from . import ids
-from typing import List, Dict, Any
-from ..data import mapping as mp
-
 
 
 def render(*, app: Dash, data_source: DataSource) -> html.Div:
-    
+    """
+    Renders component
+    """
     @app.callback(
-            Output(ids.TIME_STORE, 'data'),
-            Input(ids.INTERVAL_COMPONENT, 'n_intervals')
+        Output(ids.TIME_STORE, "data"), Input(ids.INTERVAL_COMPONENT, "n_intervals")
     )
     def update_and_store_timestamp(_: int) -> datetime.datetime:
         return datetime.datetime.now()
 
     @app.callback(
-        Output(ids.TABLE, 'children'),
-        [Input(ids.LINE_CHART, 'hoverData'),
-        Input(ids.LOCATION_DROPDOWN, 'value'),
-        Input(ids.TIME_STORE, 'data')]
+        Output(ids.TABLE, "children"),
+        [
+            Input(ids.LINE_CHART, "hoverData"),
+            Input(ids.LOCATION_DROPDOWN, "value"),
+            Input(ids.TIME_STORE, "data"),
+        ],
     )
-    def build_table(hov_data: Dict[str, Any], location: str, timepoint:datetime.datetime) -> dcc.Markdown:
+    def build_table(
+        hov_data: Dict[str, Any], location: str, timepoint: datetime.datetime
+    ) -> dcc.Markdown:
         df = data_source.filter(location=location, measures=None)
 
-        current_timepoint = df.data[df.data['timepoint'] < timepoint]['timepoint'].iloc[0]
-        if hov_data is None: 
+        current_timepoint = df.data[df.data["timepoint"] < timepoint]["timepoint"].iloc[
+            0
+        ]
+        if hov_data is None:
             highlight_timepoint = current_timepoint
         else:
-            highlight_timepoint = hov_data['points'][0]['x']
+            highlight_timepoint = hov_data["points"][0]["x"]
         highlight_timepoint = str(highlight_timepoint)
-        data_snapshot = df.data[df.data['timepoint'] == highlight_timepoint].to_dict('records')[0]
+        data_snapshot = df.data[df.data["timepoint"] == highlight_timepoint].to_dict(
+            "records"
+        )[0]
 
-        table = html.Div(children=[dcc.Markdown(
-            f"""
-            ## {datetime.datetime.strftime(data_snapshot['timepoint'], "%d %b %Y, %I %p")}\n"""),
-            dcc.Markdown(
-            f"""
+        table = html.Div(
+            children=[
+                dcc.Markdown(
+                    f"""
+            ## {datetime.datetime.strftime(data_snapshot['timepoint'], "%d %b %Y, %I %p")}\n"""
+                ),
+                dcc.Markdown(
+                    f"""
             Temp: {data_snapshot['temp2m']}\n
             Wind : {data_snapshot['wind10m_speed']} m/s | {data_snapshot['wind10m_direction']}\n
             Precipitation : {data_snapshot['prec_type'] if data_snapshot['prec_type'] != "none" else "clear"}\n
@@ -47,14 +57,16 @@ def render(*, app: Dash, data_source: DataSource) -> html.Div:
             Cloud coverage: {data_snapshot['cloudcover_desc']}\n
             Relative humidity : {data_snapshot['rh2m_desc']}\n***
             """
-            )])
+                ),
+            ]
+        )
 
         return table
-        
-    return html.Div([
-        dcc.Interval(id = ids.INTERVAL_COMPONENT, interval= 60 * 1000, n_intervals= 0),
-        dcc.Store(id=ids.TIME_STORE, data=datetime.datetime.now()),
-        html.Div(id=ids.TABLE)
-        ])
-    
-        
+
+    return html.Div(
+        [
+            dcc.Interval(id=ids.INTERVAL_COMPONENT, interval=60 * 1000, n_intervals=0),
+            dcc.Store(id=ids.TIME_STORE, data=datetime.datetime.now()),
+            html.Div(id=ids.TABLE),
+        ]
+    )

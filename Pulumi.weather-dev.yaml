@@ -1,2 +1,3 @@
 config:
-  gcp:project: "pulumi-weather"
+  gcp:project: "weather-one-384514"
+  gcp:region: europe-west1

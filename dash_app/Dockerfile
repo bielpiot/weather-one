@@ -1,4 +1,4 @@
-FROM python:3.10-buster
+FROM python:3.11-buster
 
 RUN set -e; \
     apt-get update -y && apt-get install -y \
@@ -24,3 +24,4 @@ COPY . ./
 RUN chmod +x /app/gcsfuse_run.sh
 ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD ["/app/gcsfuse_run.sh"]
+
