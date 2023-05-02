@@ -9,7 +9,7 @@ from pulumi import Config
 
 # Part 0: Initials, common resources
 config = Config()
-project = pulumi.get_project()
+project = gcp.organizations.get_project().project_id
 org = pulumi.get_organization()
 
 PATH_TO_FUNCTIONS_SOURCE_CODE = "./get_data"
