@@ -4,7 +4,7 @@ import pulumi
 import pulumi_gcp as gcp
 import pulumi_docker as docker
 from pulumi_docker import DockerBuild
-from pulumi import Config
+from pulumi import Config, ResourceOptions
 
 
 # Part 0: Initials, common resources
@@ -17,24 +17,24 @@ PATH_TO_DASH_APP = "./dash_app"
 
 # list of api services that has to be enabled
 services_apis = [
+    "cloudbuild.googleapis.com",
     "cloudfunctions.googleapis.com",
     "run.googleapis.com",
     "storage.googleapis.com",
     "containerregistry.googleapis.com",
     "cloudscheduler.googleapis.com",
-    "pubsub.googleapis.com",
 ]
 
 # enable/prepare api services
-apis = [
-    gcp.projects.Service(
+apis = {
+    f"{project}-{service_api}": gcp.projects.Service(
         f"{project}-{service_api}",
         disable_dependent_services=True,
         project=project,
         service=service_api,
     )
     for service_api in services_apis
-]
+}
 
 # Service account to run operations
 service_acc = gcp.serviceaccount.Account(
@@ -70,27 +70,39 @@ func_config_values = {"BUCKET_NAME": data_bucket.name}
 
 # Function creation
 data_update_function = gcp.cloudfunctions.Function(
-    "weather_one_data_update_function",
+    "weather_one_function",
     description="Function responsible for getting data from API and loading it into bucket as csv",
-    runtime="python310",
+    runtime="python311",
     available_memory_mb=128,
-    source_archive_bucket=data_bucket.name,
+    source_archive_bucket=repo_bucket.name,
     source_archive_object=source_archive_object.name,
-    entry_point="load_astrometeo_data_to_bucket",
+    entry_point="save_astrometeo_data_to_bucket",
     trigger_http=True,
     environment_variables=func_config_values,
+    region="europe-central2",
+    project=project,
+    opts=ResourceOptions(
+        depends_on=[
+            apis[f"{project}-cloudfunctions.googleapis.com"],
+            apis[f"{project}-cloudbuild.googleapis.com"],
+        ]
+    ),
 )
 
 # Part II : Dash_app frontend, utilizing Cloud Run (read data -> build app)
 # create a private GCR repo, get info
 registry = gcp.container.Registry(
-    "weather-one-registry", location="EU", project=project
+    "weather-one-registry",
+    location="EU",
+    project=project,
+    opts=ResourceOptions(
+        depends_on=[apis[f"{project}-containerregistry.googleapis.com"]]
+    ),
 )
 registry_url = registry.id.apply(
     lambda _: gcp.container.get_registry_repository().repository_url
 )
-image_name = registry_url.apply(lambda url: f"{url}/dash-app:latest")
-REGISTRY_INFO = None  # standard gcp authentication used
+image_name = registry_url.apply(lambda url: f"{url}:latest")
 
 
 # build image and push to gcr repository
@@ -98,7 +110,7 @@ weather_one_dash_image = docker.Image(
     name="weather-one-image",
     build=DockerBuild(context="./dash_app"),
     image_name=image_name,
-    registry=REGISTRY_INFO,
+    # registry=docker.ImageRegistry(server=registry_url)
 )
 
 cloud_run = gcp.cloudrun.Service(
@@ -118,6 +130,7 @@ cloud_run = gcp.cloudrun.Service(
             ]
         )
     ),
+    opts=ResourceOptions(depends_on=[apis[f"{project}-run.googleapis.com"]]),
 )
 
 # Part III: Cloud Scheduler responsible for triggering get_data function
@@ -132,16 +145,25 @@ gcp_scheduler = gcp.cloudscheduler.Job(
             service_account_email=service_acc.email
         ),
     ),
+    opts=ResourceOptions(depends_on=[apis[f"{project}-cloudscheduler.googleapis.com"]]),
 )
 
+
 # Part IV: IAM
+storage_manager = gcp.storage.BucketIAMMember(
+    "manager",
+    bucket=repo_bucket.name,
+    role="roles/storage.admin",
+    member=service_acc.email.apply(lambda sa_email: f"serviceAccount:{sa_email}"),
+)
+
 func_invoker = gcp.cloudfunctions.FunctionIamMember(
     "invoker",
     project=data_update_function.project,
     region=data_update_function.region,
     cloud_function=data_update_function.name,
     role="roles/cloudfunctions.invoker",
-    member=service_acc.email,
+    member=service_acc.email.apply(lambda sa_email: f"serviceAccount:{sa_email}"),
 )
 
 
