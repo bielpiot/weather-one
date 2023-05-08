@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List
 import pandas as pd
-from pydantic import BaseModel, validator, conint # pylint: disable=no-name-in-module
+from pydantic import BaseModel, validator, conint
 from . import mapping as mp
 from . import fields
 
@@ -10,6 +10,7 @@ class DataSchema(BaseModel):
     """
     Class definition for data schema representation
     """
+
     location: str
     timepoint: datetime
     cloudcover: conint(ge=fields.Cloudcover.LOW_BOUND, le=fields.Cloudcover.HIGH_BOUND)
@@ -25,11 +26,11 @@ class DataSchema(BaseModel):
     wind10m_speed: conint(ge=fields.WindSpeed.LOW_BOUND, le=fields.WindSpeed.HIGH_BOUND)
 
     @validator("lifted_index", each_item=True)
-    def lifted_index_is_proper(cls: BaseModel, val: int) -> int: # pylint: disable=no-self-argument
+    def lifted_index_is_proper(cls: BaseModel, val: int) -> int:
         """
         Validator for lifted_index values
         """
-        if not val in fields.LiftedIndex.VALUES.value:
+        if val not in fields.LiftedIndex.VALUES.value:
             raise ValueError("incorrect lifted index!")
         return val
 
@@ -136,10 +137,13 @@ def add_descriptions(columns: List[str]):
     [("rh2m", mp.RH2M_SCALED_TABLE), ("lifted_index", mp.LIFTED_INDEX_SCALED_TABLE)]
 )
 @validate_data_schema(DataSchema)
-def load_astrometeo_data(path: str) -> pd.DataFrame:
+def load_astrometeo_data(path: str, failsafe_path: str) -> pd.DataFrame:
     """
     Loads data from .csv under given path
     """
-    data = pd.read_csv(path)
+    try:
+        data = pd.read_csv(path)
+    except FileNotFoundError:
+        data = pd.read_csv(failsafe_path)
     data["timepoint"] = pd.to_datetime(data["timepoint"])
     return data

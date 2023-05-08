@@ -3,7 +3,9 @@ from ..data.source import DataSource
 from . import ids
 
 
-def render(*, app: Dash, data_source: DataSource) -> html.Div: # pylint: disable=unused-argument
+def render(
+    *, app: Dash, data_source: DataSource
+) -> html.Div:  # pylint: disable=unused-argument
     """
     Renders component
     """

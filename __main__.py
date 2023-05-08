@@ -1,5 +1,4 @@
 import os
-import time
 import pulumi
 import pulumi_gcp as gcp
 import pulumi_docker as docker
@@ -14,6 +13,7 @@ org = pulumi.get_organization()
 
 PATH_TO_FUNCTIONS_SOURCE_CODE = "./get_data"
 PATH_TO_DASH_APP = "./dash_app"
+FAILSAFE_DATA_PATH = "./failsafe_data/failsafe_data.csv"
 
 # list of api services that has to be enabled
 services_apis = [
@@ -43,7 +43,7 @@ service_acc = gcp.serviceaccount.Account(
     display_name="Service account for Weather One",
 )
 
-# create data buckets: one reponsible for storing functions code, second for storing downloaded data
+# create data buckets: one for functions code, second for downloaded data
 data_bucket = gcp.storage.Bucket("data_storage", location="EUROPE-CENTRAL2")
 repo_bucket = gcp.storage.Bucket("code_storage", location="EUROPE-CENTRAL2")
 
@@ -59,8 +59,8 @@ archive = pulumi.AssetArchive(assets=assets)
 
 # Build Cloud Storage object containing function's source code
 source_archive_object = gcp.storage.BucketObject(
-    "get_data_func_object",
-    name=f"main.py-{time.time()}",
+    "get-data-func-object",
+    name="func",
     bucket=repo_bucket.name,
     source=archive,
 )
@@ -70,8 +70,8 @@ func_config_values = {"BUCKET_NAME": data_bucket.name}
 
 # Function creation
 data_update_function = gcp.cloudfunctions.Function(
-    "weather_one_function",
-    description="Function responsible for getting data from API and loading it into bucket as csv",
+    "weather-one-function",
+    description="Function that gets data from API and loading it into bucket (.csv)",
     runtime="python311",
     available_memory_mb=128,
     source_archive_bucket=repo_bucket.name,
@@ -90,6 +90,14 @@ data_update_function = gcp.cloudfunctions.Function(
 )
 
 # Part II : Dash_app frontend, utilizing Cloud Run (read data -> build app)
+# failsafe data csv upload to data bucket
+failsafe_data_object = gcp.storage.BucketObject(
+    "failsafe-data-csv",
+    name="failsafe_data.csv",
+    bucket=data_bucket.name,
+    source=pulumi.FileAsset(FAILSAFE_DATA_PATH),
+)
+
 # create a private GCR repo, get info
 registry = gcp.container.Registry(
     "weather-one-registry",
@@ -102,7 +110,7 @@ registry = gcp.container.Registry(
 registry_url = registry.id.apply(
     lambda _: gcp.container.get_registry_repository().repository_url
 )
-image_name = registry_url.apply(lambda url: f"{url}:latest")
+image_name = registry_url.apply(lambda url: f"{url}/weather-one-image:latest")
 
 
 # build image and push to gcr repository
@@ -130,19 +138,27 @@ cloud_run = gcp.cloudrun.Service(
             ]
         )
     ),
-    opts=ResourceOptions(depends_on=[apis[f"{project}-run.googleapis.com"]]),
+    opts=ResourceOptions(
+        depends_on=[
+            apis[f"{project}-run.googleapis.com"],
+            weather_one_dash_image,
+            failsafe_data_object,
+        ]
+    ),
 )
 
 # Part III: Cloud Scheduler responsible for triggering get_data function
+
 gcp_scheduler = gcp.cloudscheduler.Job(
     "job",
     description="func job @ schedule",
     schedule="0 * * * *",
     time_zone="Etc/UTC",
+    attempt_deadline="320s",
     http_target=gcp.cloudscheduler.JobHttpTargetArgs(
         uri=data_update_function.https_trigger_url,
-        oauth_token=gcp.cloudscheduler.JobHttpTargetOauthTokenArgs(
-            service_account_email=service_acc.email
+        oidc_token=gcp.cloudscheduler.JobHttpTargetOidcTokenArgs(
+            service_account_email=service_acc.email,
         ),
     ),
     opts=ResourceOptions(depends_on=[apis[f"{project}-cloudscheduler.googleapis.com"]]),
@@ -166,6 +182,13 @@ func_invoker = gcp.cloudfunctions.FunctionIamMember(
     member=service_acc.email.apply(lambda sa_email: f"serviceAccount:{sa_email}"),
 )
 
+cloudrun_user = gcp.cloudrun.IamMember(
+    "viewer",
+    location=cloud_run.location,
+    service=cloud_run.name,
+    role="roles/run.invoker",
+    member="allUsers",
+)
 
 pulumi.export("full_image_name", weather_one_dash_image.image_name)
 pulumi.export("cloud_run_url", cloud_run.statuses[0].url)

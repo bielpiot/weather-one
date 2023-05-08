@@ -1,3 +1,4 @@
+fsspec
 requests
 pandas
 gcsfs

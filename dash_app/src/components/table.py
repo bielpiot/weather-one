@@ -10,6 +10,7 @@ def render(*, app: Dash, data_source: DataSource) -> html.Div:
     """
     Renders component
     """
+
     @app.callback(
         Output(ids.TIME_STORE, "data"), Input(ids.INTERVAL_COMPONENT, "n_intervals")
     )

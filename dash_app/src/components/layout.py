@@ -1,8 +1,13 @@
 from dash import Dash, html
 import dash_bootstrap_components as dbc
-from dash_app.src.components import line_chart, location_dropdown, measure_dropdown, table
+from . import (
+    line_chart,
+    location_dropdown,
+    measure_dropdown,
+    table,
+)
 
-from dash_app.src.data.source import DataSource
+from ..data.source import DataSource
 
 
 def create_layout(*, app: Dash, data_source: DataSource) -> html.Div:

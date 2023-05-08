@@ -1,8 +1,11 @@
 Babel
 dash
 dash-bootstrap-components
+fsspec
 pandas
 plotly
 pydantic
 pytest
 Faker
+gcsfs
+gunicorn

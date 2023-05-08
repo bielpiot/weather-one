@@ -101,6 +101,6 @@ class DataSource:
         """
         All operations to get desirable final data form
         1. sort
-        2. open for extension - when need for additional operations arises split into separate functions
+        2. open for extension - split into separate functions if needed
         """
         return self.data.sort_values(by=[sort_by])

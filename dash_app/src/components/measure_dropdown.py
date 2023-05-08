@@ -11,8 +11,11 @@ def render(*, app: Dash, data_source: DataSource) -> html.Div:
     """
     Renders component
     """
+
     @app.callback(
-        Output(ids.MEASURE_DROPDOWN, "value", allow_duplicate=True ),  # pylint: disable=unexpected-keyword-arg
+        Output(
+            ids.MEASURE_DROPDOWN, "value", allow_duplicate=True
+        ),  # pylint: disable=unexpected-keyword-arg
         [Input(ids.SELECT_ALL_MEASURES_BUTTON, "n_clicks")],
         prevent_initial_call=True,
     )
