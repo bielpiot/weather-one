@@ -1,6 +1,8 @@
-from typing import List
+from typing import List, Dict
+import pandas as pd
 from dash import Dash, html, dcc
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
+from dash.exceptions import PreventUpdate
 from ..data.mapping import human_readable_measures as hrm
 
 from ..data.source import DataSource
@@ -28,6 +30,23 @@ def render(*, app: Dash, data_source: DataSource) -> html.Div:
     )
     def deselect_secondary_measures(_: int) -> List:
         return []
+
+    @app.callback(
+        Output(ids.MEASURE_DROPDOWN, "options"),
+        Input(ids.MAIN_STORE, "data"),
+        State(ids.MEASURE_DROPDOWN, "options"),
+    )
+    def update_measure_dropdown(
+        updated_data_source: Dict[str, any], current_options: List[Dict[str, str]]
+    ):
+        updated_data_source = DataSource(pd.DataFrame.from_dict(updated_data_source))
+        updated_options = [
+            {"label": hrm.get(measure, measure), "value": measure}
+            for measure in updated_data_source.graphed_measures_list
+        ]
+        if updated_options == current_options:
+            raise PreventUpdate
+        return updated_options
 
     return html.Div(
         children=[

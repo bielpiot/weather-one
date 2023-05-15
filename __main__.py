@@ -1,4 +1,5 @@
 import os
+import time
 import pulumi
 import pulumi_gcp as gcp
 import pulumi_docker as docker
@@ -7,7 +8,8 @@ from pulumi import Config, ResourceOptions
 
 
 # Part 0: Initials, common resources
-config = Config()
+config = Config("gcp")
+region = config.require("region")
 project = gcp.organizations.get_project().project_id
 org = pulumi.get_organization()
 
@@ -44,8 +46,12 @@ service_acc = gcp.serviceaccount.Account(
 )
 
 # create data buckets: one for functions code, second for downloaded data
-data_bucket = gcp.storage.Bucket("data_storage", location="EUROPE-CENTRAL2")
-repo_bucket = gcp.storage.Bucket("code_storage", location="EUROPE-CENTRAL2")
+data_bucket = gcp.storage.Bucket(
+    "data_storage", location=region.capitalize(), force_destroy=True
+)
+repo_bucket = gcp.storage.Bucket(
+    "code_storage", location=region.capitalize(), force_destroy=True
+)
 
 # Part I: get_data utilizing Cloud function (request API -> store .csv @ bucket)
 # Zip function code into archive, as required by Cloud Function service
@@ -60,7 +66,7 @@ archive = pulumi.AssetArchive(assets=assets)
 # Build Cloud Storage object containing function's source code
 source_archive_object = gcp.storage.BucketObject(
     "get-data-func-object",
-    name="func",
+    name=f"func-{time.time()}",  # name change so pulumi update function built
     bucket=repo_bucket.name,
     source=archive,
 )
@@ -73,13 +79,13 @@ data_update_function = gcp.cloudfunctions.Function(
     "weather-one-function",
     description="Function that gets data from API and loading it into bucket (.csv)",
     runtime="python311",
-    available_memory_mb=128,
+    available_memory_mb=256,
     source_archive_bucket=repo_bucket.name,
     source_archive_object=source_archive_object.name,
     entry_point="save_astrometeo_data_to_bucket",
     trigger_http=True,
     environment_variables=func_config_values,
-    region="europe-central2",
+    region=region,
     project=project,
     opts=ResourceOptions(
         depends_on=[
@@ -156,6 +162,7 @@ gcp_scheduler = gcp.cloudscheduler.Job(
     time_zone="Etc/UTC",
     attempt_deadline="320s",
     http_target=gcp.cloudscheduler.JobHttpTargetArgs(
+        http_method="GET",
         uri=data_update_function.https_trigger_url,
         oidc_token=gcp.cloudscheduler.JobHttpTargetOidcTokenArgs(
             service_account_email=service_acc.email,
@@ -166,9 +173,16 @@ gcp_scheduler = gcp.cloudscheduler.Job(
 
 
 # Part IV: IAM
-storage_manager = gcp.storage.BucketIAMMember(
-    "manager",
+repo_storage_manager = gcp.storage.BucketIAMMember(
+    "repo_manager",
     bucket=repo_bucket.name,
+    role="roles/storage.admin",
+    member=service_acc.email.apply(lambda sa_email: f"serviceAccount:{sa_email}"),
+)
+
+data_storage_manager = gcp.storage.BucketIAMMember(
+    "data_manager",
+    bucket=data_bucket.name,
     role="roles/storage.admin",
     member=service_acc.email.apply(lambda sa_email: f"serviceAccount:{sa_email}"),
 )

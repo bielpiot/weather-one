@@ -103,4 +103,6 @@ class DataSource:
         1. sort
         2. open for extension - split into separate functions if needed
         """
-        return self.data.sort_values(by=[sort_by])
+        data = self.data
+        data["timepoint"] = pd.to_datetime(data["timepoint"])
+        return data.sort_values(by=[sort_by])

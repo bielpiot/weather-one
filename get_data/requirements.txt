@@ -1,4 +1,5 @@
 fsspec
+functions-framework==3.*
 requests
 pandas
 gcsfs

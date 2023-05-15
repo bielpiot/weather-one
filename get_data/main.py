@@ -15,10 +15,17 @@ class Location(NamedTuple):
     longitude: float
 
 
-warsaw = Location(name="Warsaw", latitude=21.0122287, longitude=52.2296756)
-stalowa_wola = Location(name="Stalowa Wola", latitude=22.053586, longitude=50.5826005)
+warsaw = Location(name="Warsaw", latitude=52.2296756, longitude=21.0122287)
+stalowa_wola = Location(name="Stalowa Wola", latitude=50.5826005, longitude=22.053586)
+krakow = Location(name="Kraków", latitude=50.049683, longitude=19.944544)
+wroclaw = Location(name="Wrocław", latitude=51.107883, longitude=17.038538)
+ustrzyki_gorne = Location(
+    name="Ustrzyki Górne", latitude=49.430324, longitude=22.594237
+)
+ustka = Location(name="Ustka", latitude=54.5805607, longitude=16.861891)
 
-LOCATIONS = (warsaw, stalowa_wola)
+
+LOCATIONS = (warsaw, stalowa_wola, krakow, wroclaw, ustrzyki_gorne, ustka)
 BUCKET_NAME = os.environ.get("BUCKET_NAME")
 
 
@@ -37,12 +44,7 @@ def get_data(locations: Tuple[Location] = LOCATIONS) -> pd.DataFrame:
         URL = f"http://www.7timer.info/bin/api.pl?lon={lon}&lat={lat}&product=astro&tzshift={tzshift}&output=json"
 
         # extract and format single location data
-        try:
-            result = requests.get(url=URL, timeout=10).json()
-            result.raise_for_status()
-        except requests.exceptions.HTTPError as err:
-            raise SystemExit(err) from err
-
+        result = requests.get(url=URL, timeout=10).json()
         startpoint = datetime.strptime(result["init"], "%Y%m%d%H")
         dataseries = result["dataseries"]
         df = pd.DataFrame(dataseries)
@@ -69,7 +71,7 @@ def get_data(locations: Tuple[Location] = LOCATIONS) -> pd.DataFrame:
     return df
 
 
-def save_astrometeo_data_to_bucket(request, bucket_name: str = BUCKET_NAME) -> None:
+def save_astrometeo_data_to_bucket(request, bucket_name: str = BUCKET_NAME) -> str:
     """
     Loads data from api request into bucket (as .csv)
     """
@@ -79,4 +81,4 @@ def save_astrometeo_data_to_bucket(request, bucket_name: str = BUCKET_NAME) -> N
         msg = "Saved succesfully"
     except Exception as exc:
         msg = exc
-    print(msg)
+    return msg

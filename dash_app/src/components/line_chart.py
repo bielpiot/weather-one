@@ -1,8 +1,9 @@
-from typing import List
+from typing import List, Dict
 import plotly.graph_objects as go
+import pandas as pd
 from plotly.subplots import make_subplots
 from dash import Dash, dcc, html
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 from . import ids
 from ..data.source import DataSource
 from ..data import mapping as mp
@@ -20,7 +21,7 @@ def blank_fig():
     return fig
 
 
-def render(app: Dash, data_source: DataSource) -> html.Div:
+def render(app: Dash) -> html.Div:
     """
     Renders component
     """
@@ -29,8 +30,18 @@ def render(app: Dash, data_source: DataSource) -> html.Div:
         Output(ids.LINE_CHART, "figure"),
         Input(ids.LOCATION_DROPDOWN, "value"),
         Input(ids.MEASURE_DROPDOWN, "value"),
+        Input(ids.MAIN_STORE, "data"),
+        State(ids.MAIN_STORE, "data"),
     )
-    def update_chart(location: str, measures: List[str]) -> go.Figure:
+    def update_chart(
+        location: str,
+        measures: List[str],
+        updated_data_source: Dict[str, any],
+        data_source: Dict[str, any],
+    ) -> go.Figure:
+        if updated_data_source:
+            data_source = updated_data_source
+        data_source = DataSource(pd.DataFrame.from_dict(data_source))
         filtered_data_source = data_source.filter(location=location, measures=measures)
         if not filtered_data_source.row_count:
             return html.Div("No data", id=ids.LINE_CHART)

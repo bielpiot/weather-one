@@ -1,12 +1,13 @@
 import datetime
+import pandas as pd
 from typing import Dict, Any
 from dash import Dash, html, dcc
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 from ..data.source import DataSource
 from . import ids
 
 
-def render(*, app: Dash, data_source: DataSource) -> html.Div:
+def render(*, app: Dash) -> html.Div:
     """
     Renders component
     """
@@ -24,23 +25,25 @@ def render(*, app: Dash, data_source: DataSource) -> html.Div:
             Input(ids.LOCATION_DROPDOWN, "value"),
             Input(ids.TIME_STORE, "data"),
         ],
+        State(ids.MAIN_STORE, "data"),
     )
     def build_table(
-        hov_data: Dict[str, Any], location: str, timepoint: datetime.datetime
+        hov_data: Dict[str, Any],
+        location: str,
+        timepoint: datetime.datetime,
+        data_source: Dict[str, any],
     ) -> dcc.Markdown:
+        data_source = DataSource(pd.DataFrame.from_dict(data_source))
         df = data_source.filter(location=location, measures=None)
+        df = df.build_data_table()
 
-        current_timepoint = df.data[df.data["timepoint"] < timepoint]["timepoint"].iloc[
-            0
-        ]
+        current_timepoint = df[df["timepoint"] < timepoint]["timepoint"].iloc[0]
         if hov_data is None:
             highlight_timepoint = current_timepoint
         else:
             highlight_timepoint = hov_data["points"][0]["x"]
         highlight_timepoint = str(highlight_timepoint)
-        data_snapshot = df.data[df.data["timepoint"] == highlight_timepoint].to_dict(
-            "records"
-        )[0]
+        data_snapshot = df[df["timepoint"] == highlight_timepoint].to_dict("records")[0]
 
         table = html.Div(
             children=[
