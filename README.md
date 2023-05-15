@@ -3,7 +3,7 @@
 Pulumi-deployed Dash-based simple weather application running on Google Cloud Platform
 
 ## Overview
-![Weather-one diagram](https://github.com/bielpiot/weather-one/diagram.png)
+![Weather-one diagram](https://github.com/bielpiot/blob/master/weather-one/diagram.png)
 
 Weather-one is an example of automized application build & deployment into cloud environment using IaC approach. Goal of the project was to build backend utilizing several GCP services along with frontend running in some python-based technology. I settled at dash as I had no closer familiarity with it beforehand and it seemed to be a remarkable data-visualisation tool.
 
@@ -61,7 +61,7 @@ Prerequisites:
     ```
 
 You can get link of your app by calling 'pulumi stack output cloud_run_url'. Below you can see a showcase of application:
-![](https://github.com/bielpiot/weather-one/weather-one.gif)
+![](https://github.com/bielpiot/weather-one/blob/master/weather-one.gif)
 
 You can also check app running [here](https://weather-one-dash-e577963-nsh4gb4fvq-lm.a.run.app)
 
