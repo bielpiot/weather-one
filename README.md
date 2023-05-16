@@ -63,7 +63,7 @@ Prerequisites:
 You can get link of your app by calling 'pulumi stack output cloud_run_url'. Below you can see a showcase of application:
 ![](https://github.com/bielpiot/weather-one/blob/master/weather-one.gif)
 
-You can also check app running [here](https://weather-one-dash-e577963-nsh4gb4fvq-lm.a.run.app)
+You can also check app running [here](https://weather-one-dash-0738b6d-nsh4gb4fvq-lm.a.run.app)
 
 1. Cleanup
 
