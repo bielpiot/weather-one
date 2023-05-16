@@ -1,4 +1,0 @@
-config:
-  docker:host: npipe:////.//pipe//docker_engine
-  gcp:project: "weather-one-384514"
-  gcp:region: europe-central2
