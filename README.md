@@ -17,7 +17,7 @@ GCP scheduler - triggering function periodically (Currently it is set to refresh
 
 
 ## Instalation & deployment
-Prerequisites:
+# Prerequisites:
 1. [GCP account](https://console.cloud.google.com/getting-started)
 2. [Pulumi CLI](https://www.pulumi.com/docs/get-started/install/)
 3. [Pulumi-GCP configuration](https://www.pulumi.com/docs/intro/cloud-providers/gcp/setup/)
@@ -25,13 +25,14 @@ Prerequisites:
 5. [Pulumi-Docker configuration](https://www.pulumi.com/registry/packages/docker/installation-configuration/)
 6. [Configure docker-gcp.io communication using `gcloud auth configure-docker`](https://cloud.google.com/sdk/gcloud/reference/auth/configure-docker)
 
+# Run
 1. Create a new stack:
 
     ```bash
     pulumi stack init <stack name>
     ```
 
-1. Configure GCP project and region:
+2. Configure GCP project and region:
 
     ```bash
     pulumi config set gcp:project <projectname>
@@ -44,7 +45,7 @@ Prerequisites:
     pulumi config set docker:host <host>
     ```
 
-1. Run `pulumi up` to preview and deploy changes:
+3. Run `pulumi up` to preview and deploy changes:
 
     ```bash
     $ pulumi up
@@ -65,7 +66,7 @@ You can get link of your app by calling 'pulumi stack output cloud_run_url'. Bel
 
 You can also check app running [here](https://weather-one-dash-0738b6d-nsh4gb4fvq-lm.a.run.app)
 
-1. Cleanup
+4. Cleanup
 
     ```
     $ pulumi destroy
